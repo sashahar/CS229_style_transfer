@@ -29,8 +29,12 @@ class Self_Attn(nn.Module):
         if pixel_wise:
             b_size = x.size(0)
             f_size = x.size(-1)
+            print("self.imsize ", self.imsize)
+            print(x.shape)
 
             f_x = self.f_(x)  # batch x in_dim/8*f*f x f_size x f_size
+            print("Next should be: ({}, {}, {}. {})".format(b_size, self.in_dim/8*f_size**2, f_size, f_size ))
+            print(f_x.shape)
             g_x = self.g_(x)  # batch x in_dim/8*f*f x f_size x f_size
             h_x = self.h_(x).unsqueeze(2).repeat(1, 1, f_size ** 2, 1, 1).contiguous()\
                                                                 .view(b_size, -1,f_size ** 2,f_size ** 2)  # batch x in_dim x f*f x f_size x f_size
@@ -54,7 +58,7 @@ class Generator(nn.Module):
     """Generator."""
 
 
-    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64):
+    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, num_channels=1):
         super(Generator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -64,8 +68,8 @@ class Generator(nn.Module):
         ngf = 64
         #repeat_num = int(np.log2(self.imsize)) - 3
         n_downsampling = 2
-        layer1.append(nn.ReflectionPad2d(3))
-        layer1.append(nn.Conv2d(3, ngf, kernel_size=7, padding=0,bias=True))
+        layer1.append(nn.ReflectionPad2d(num_channels))
+        layer1.append(nn.Conv2d(num_channels, ngf, kernel_size=7, padding=0,bias=True))
         layer1.append(nn.BatchNorm2d(ngf))
         layer1.append(nn.LeakyReLU(0.1))
         for i in range(n_downsampling):
@@ -74,7 +78,6 @@ class Generator(nn.Module):
                                 stride=2, padding=1, bias=True)))
             layer1.append(nn.BatchNorm2d(ngf * mult * 2))
             layer1.append(nn.LeakyReLU(0.1))
-
         self.attn1 = Self_Attn(batch_size, int(self.imsize/4), ngf * mult * 2, 'relu')
         n_intermediate = 3
         mult = 2**n_downsampling
@@ -122,6 +125,7 @@ class Generator(nn.Module):
     def forward(self, z):
         #z = z.view(z.size(0), z.size(1), 1, 1)
         out=self.l1(z)
+        print("problem with dimensions is here:")
         out,p1 = self.attn1(out)
         out=self.l2(out)
         out,p2 = self.attn2(out)
@@ -183,10 +187,12 @@ class ConvolutionalGenerator(nn.Module):
     def forward(self, z):
         #z = z.view(z.size(0), z.size(1), 1, 1)
         out=self.l1(z)
+        print("5!")
         out,p1 = self.attn1(out)
         out=self.l2(out)
         #out=self.l3(out)
         #out=self.l4(out)
+        print('6!')
         out,p2 = self.attn2(out)
         out=self.last(out)
 
@@ -206,8 +212,8 @@ class UpDownConvolutionalGenerator(nn.Module):
         ngf = 64
         #repeat_num = int(np.log2(self.imsize)) - 3
         n_downsampling = 1
-        layer1.append(nn.ReflectionPad2d(3))
-        layer1.append(nn.Conv2d(3, ngf, kernel_size=7, padding=0,bias=True))
+        layer1.append(nn.ReflectionPad2d(1))
+        layer1.append(nn.Conv2d(1, ngf, kernel_size=7, padding=0,bias=True))
         layer1.append(nn.BatchNorm2d(ngf))
         layer1.append(nn.LeakyReLU(0.1))
         for i in range(n_downsampling):
@@ -328,7 +334,7 @@ class Discriminator(nn.Module):
         layer3 = []
         last = []
 
-        layer1.append(SpectralNorm(nn.Conv2d(6, conv_dim, 4, 2, 1)))
+        layer1.append(SpectralNorm(nn.Conv2d(2, conv_dim, 4, 2, 1)))
         layer1.append(nn.LeakyReLU(0.1))
 
         curr_dim = conv_dim
@@ -341,12 +347,12 @@ class Discriminator(nn.Module):
         layer3.append(nn.LeakyReLU(0.1))
         curr_dim = curr_dim * 2
 
-        if self.imsize == 64:
-            layer4 = []
-            layer4.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-            layer4.append(nn.LeakyReLU(0.1))
-            self.l4 = nn.Sequential(*layer4)
-            curr_dim = curr_dim*2
+        #if self.imsize == 64:
+        layer4 = []
+        layer4.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+        layer4.append(nn.LeakyReLU(0.1))
+        self.l4 = nn.Sequential(*layer4)
+        curr_dim = curr_dim*2
         self.l1 = nn.Sequential(*layer1)
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
@@ -354,6 +360,7 @@ class Discriminator(nn.Module):
         last.append(nn.Conv2d(curr_dim, 1, 4))
         self.last = nn.Sequential(*last)
 
+        print("here")
         self.attn1 = Self_Attn(batch_size, int(self.imsize/8), 256, 'relu')
         self.attn2 = Self_Attn(batch_size, int(self.imsize/16), 512, 'relu')
 

@@ -1,7 +1,8 @@
-from parameter import *
+from parameters import *
 from trainer import Trainer
 # from tester import Tester
-from data_loader import Data_Loader
+from torch.utils.data import Dataset, DataLoader
+from custom_dataset import *
 from torch.backends import cudnn
 from utils import make_folder
 
@@ -11,8 +12,8 @@ def main(config):
 
 
     # Data loader
-    data_loader = Data_Loader(config.train, config.dataset, config.image_path, config.imsize,
-                             config.batch_size, shuf=config.train)
+    dataset = JaffeDataset(data_dir = 'jaffe', labels_path = 'labels.csv')
+    data_loader = DataLoader(dataset, config.batch_size, shuffle=True) #, num_workers= 4)
 
     # Create directories if not exist
     make_folder(config.model_save_path, config.version)
@@ -22,13 +23,10 @@ def main(config):
 
 
     if config.train:
-        if config.model=='sagan':
-            trainer = Trainer(data_loader.loader(), config)
-        elif config.model == 'qgan':
-            trainer = qgan_trainer(data_loader.loader(), config)
+        trainer = Trainer(data_loader, config)
         trainer.train()
     else:
-        tester = Tester(data_loader.loader(), config)
+        tester = Tester(data_loader, config)
         tester.test()
 
 if __name__ == '__main__':

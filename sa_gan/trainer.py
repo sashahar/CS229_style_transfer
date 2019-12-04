@@ -56,6 +56,8 @@ class Trainer(object):
         self.log_path = os.path.join(config.log_path, self.version)
         self.sample_path = os.path.join(config.sample_path, self.version)
         self.model_save_path = os.path.join(config.model_save_path, self.version)
+        self.cuda = torch.cuda.is_available() #and cuda
+        print("Using cuda:", self.cuda)
 
         self.build_model()
 
@@ -97,10 +99,15 @@ class Trainer(object):
             except:
                 data_iter = iter(self.data_loader)
                 items = next(data_iter)
+                print(items)
 
-            X, Y = items['X'], items['Y']
+            X, Y = items
             X, Y = X.type(torch.FloatTensor), Y.type(torch.FloatTensor)
-            X, Y = Variable(X.cuda()), Variable(Y.cuda())
+            #X, Y = Variable(X.cuda()), Variable(Y.cuda())
+            X, Y = Variable(X), Variable(Y)
+            if self.cuda:
+                X = X.cuda()
+                Y = Y.cuda()
             real_disc_in = torch.cat((X,Y), dim = 1)
             # Compute loss with real images
             # dr1, dr2, df1, df2, gf1, gf2 are attention scores
@@ -198,10 +205,16 @@ class Trainer(object):
     def build_model(self):
         self.G = None
         if self.conv_G:
-            self.G = UpDownConvolutionalGenerator(self.batch_size,self.imsize, self.z_dim, self.g_conv_dim).cuda()
+            self.G = UpDownConvolutionalGenerator(self.batch_size,self.imsize, self.z_dim, self.g_conv_dim)
+            if self.cuda:
+                self.G = self.G.cuda()
         else:
-            self.G = Generator(self.batch_size,self.imsize, self.z_dim, self.g_conv_dim).cuda()
-        self.D = Discriminator(self.batch_size,self.imsize, self.d_conv_dim).cuda()
+            self.G = Generator(self.batch_size,self.imsize, self.z_dim, self.g_conv_dim)
+            if self.cuda:
+                self.G = self.G.cuda()
+        self.D = Discriminator(self.batch_size,self.imsize, self.d_conv_dim)
+        if self.cuda:
+            self.D = self.D.cuda()
         if self.parallel:
             self.G = nn.DataParallel(self.G)
             self.D = nn.DataParallel(self.D)
