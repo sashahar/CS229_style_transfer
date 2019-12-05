@@ -2,6 +2,7 @@ import os
 import time
 import torch
 import datetime
+import numpy as np
 
 import torch.nn as nn
 from torch.autograd import Variable
@@ -102,16 +103,22 @@ class Trainer(object):
                 print(items)
 
             X, Y = items
+            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(self.batch_size, 1, 1, 1)))
             X, Y = X.type(torch.FloatTensor), Y.type(torch.FloatTensor)
             #X, Y = Variable(X.cuda()), Variable(Y.cuda())
             X, Y = Variable(X), Variable(Y)
             if self.cuda:
                 X = X.cuda()
                 Y = Y.cuda()
-            real_disc_in = torch.cat((X,Y), dim = 1)
+
+            #FRITS: the real_disc_in consists of the images X and the desired class
+            #desired class chosen randomly, different from real class Y
+            real_disc_in = torch.cat((X,fake_class), dim = 1)
+            print(real_disc_in.shape)
             # Compute loss with real images
             # dr1, dr2, df1, df2, gf1, gf2 are attention scores
             #real_images = tensor2var(real_images)
+            #Frits TODO: why feed the real_disc_in to D?
             d_out_real,dr1,dr2 = self.D(real_disc_in)
             if self.adv_loss == 'wgan-gp':
                 d_loss_real = - torch.mean(d_out_real)
@@ -120,8 +127,10 @@ class Trainer(object):
 
             # apply Gumbel Softmax
 
-            fake_images,gf1,gf2 = self.G(X)
-            fake_disc_in = torch.cat((X, fake_images), dim = 1)
+            #Changed to input both image and class
+            fake_images,gf1,gf2 = self.G(real_disc_in)
+            print("fake image shape:", fake_images.shape)
+            fake_disc_in = torch.cat((fake_images, Y), dim = 1)
             d_out_fake,df1,df2 = self.D(fake_disc_in)
 
             if self.adv_loss == 'wgan-gp':
