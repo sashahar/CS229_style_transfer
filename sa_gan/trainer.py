@@ -133,9 +133,9 @@ class Trainer(object):
             fake_disc_in = torch.cat((fake_images, Y), dim = 1)
             d_out_fake,df1,df2 = self.D(fake_disc_in)
 
-            if self.adv_loss == 'wgan-gp':
-                d_loss_fake = d_out_fake.mean()
-            elif self.adv_loss == 'hinge':
+            # if self.adv_loss == 'wgan-gp':
+            #     d_loss_fake = d_out_fake.mean()
+            if self.adv_loss == 'hinge':
                 d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
 
 
@@ -146,35 +146,38 @@ class Trainer(object):
             self.d_optimizer.step()
 
 
-            if self.adv_loss == 'wgan-gp':
-                # Compute gradient penalty
-                alpha = torch.rand(real_images.size(0), 1, 1, 1).cuda().expand_as(real_images)
-                interpolated = Variable(alpha * real_images.data + (1 - alpha) * fake_images.data, requires_grad=True)
-                out,_,_ = self.D(interpolated)
-
-                grad = torch.autograd.grad(outputs=out,
-                                           inputs=interpolated,
-                                           grad_outputs=torch.ones(out.size()).cuda(),
-                                           retain_graph=True,
-                                           create_graph=True,
-                                           only_inputs=True)[0]
-
-                grad = grad.view(grad.size(0), -1)
-                grad_l2norm = torch.sqrt(torch.sum(grad ** 2, dim=1))
-                d_loss_gp = torch.mean((grad_l2norm - 1) ** 2)
-
-                # Backward + Optimize
-                d_loss = self.lambda_gp * d_loss_gp
-
-                self.reset_grad()
-                d_loss.backward()
-                self.d_optimizer.step()
+            # if self.adv_loss == 'wgan-gp':
+            #     # Compute gradient penalty
+            #     alpha = torch.rand(real_images.size(0), 1, 1, 1).cuda().expand_as(real_images)
+            #     interpolated = Variable(alpha * real_images.data + (1 - alpha) * fake_images.data, requires_grad=True)
+            #     out,_,_ = self.D(interpolated)
+            #
+            #     grad = torch.autograd.grad(outputs=out,
+            #                                inputs=interpolated,
+            #                                grad_outputs=torch.ones(out.size()).cuda(),
+            #                                retain_graph=True,
+            #                                create_graph=True,
+            #                                only_inputs=True)[0]
+            #
+            #     grad = grad.view(grad.size(0), -1)
+            #     grad_l2norm = torch.sqrt(torch.sum(grad ** 2, dim=1))
+            #     d_loss_gp = torch.mean((grad_l2norm - 1) ** 2)
+            #
+            #     # Backward + Optimize
+            #     d_loss = self.lambda_gp * d_loss_gp
+            #
+            #     self.reset_grad()
+            #     d_loss.backward()
+            #     self.d_optimizer.step()
 
             # ================== Train G and gumbel ================== #
             # Create random noise
             #z = tensor2var(torch.randn(real_images.size(0), self.z_dim))
-            fake_images,_,_ = self.G(X)
-            fake_disc_in = torch.cat((X, fake_images), dim = 1)
+
+            #TODO Fritz: Do we need this?
+            generator_in = torch.cat((X,fake_class), dim = 1)
+            fake_images,_,_ = self.G(generator_in)
+            fake_disc_in = torch.cat((fake_images, Y), dim = 1)
             # Compute loss with fake images
             g_out_fake,_,_ = self.D(fake_disc_in)  # batch x n
             if self.adv_loss == 'wgan-gp':
