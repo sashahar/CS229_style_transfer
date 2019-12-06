@@ -103,7 +103,7 @@ class Trainer(object):
                 print(items)
 
             X, Y = items
-            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(self.batch_size, 1, 1, 1)))
+            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(Y.shape[0], 1, 1, 1)))
             X, Y = X.type(torch.FloatTensor), Y.type(torch.FloatTensor)
             #X, Y = Variable(X.cuda()), Variable(Y.cuda())
             X, Y = Variable(X), Variable(Y)
