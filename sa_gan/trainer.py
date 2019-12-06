@@ -100,7 +100,6 @@ class Trainer(object):
             except:
                 data_iter = iter(self.data_loader)
                 items = next(data_iter)
-                print(items)
 
             X, Y = items
             fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(Y.shape[0], 1, 1, 1)))
@@ -114,7 +113,6 @@ class Trainer(object):
             #FRITS: the real_disc_in consists of the images X and the desired class
             #desired class chosen randomly, different from real class Y
             real_disc_in = torch.cat((X,fake_class), dim = 1)
-            print(real_disc_in.shape)
             # Compute loss with real images
             # dr1, dr2, df1, df2, gf1, gf2 are attention scores
             #real_images = tensor2var(real_images)
@@ -129,7 +127,6 @@ class Trainer(object):
 
             #Changed to input both image and class
             fake_images,gf1,gf2 = self.G(real_disc_in)
-            print("fake image shape:", fake_images.shape)
             fake_disc_in = torch.cat((fake_images, Y), dim = 1)
             d_out_fake,df1,df2 = self.D(fake_disc_in)
 
@@ -196,10 +193,14 @@ class Trainer(object):
                 print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_loss: {:.4f}, g_loss {:.4f}"
                       " ave_gamma_l3: {:.4f}, ave_gamma_l4: {:.4f}".
                       format(elapsed, step + 1, self.total_step, (step + 1),
-                             self.total_step , d_loss.data[0], g_loss_fake.data[0],
-                             self.G.attn1.gamma.mean().data[0], self.G.attn2.gamma.mean().data[0] ))
+                             self.total_step , d_loss.item(), g_loss_fake.item(),
+                             self.G.attn1.gamma.mean().item(), self.G.attn2.gamma.mean().item() ))
+                    # format(elapsed, step + 1, self.total_step, (step + 1),
+                    #        self.total_step , d_loss.data[0], g_loss_fake.data[0],
+                    #        self.G.attn1.gamma.mean().data[0], self.G.attn2.gamma.mean().data[0] ))
                 with open('log_info.txt', 'a') as f:
-                    f.write("Step {}, D Loss {}, G Loss {}\n".format(step + 1, d_loss.data[0], g_loss_fake.data[0]))
+                    # f.write("Step {}, D Loss {}, G Loss {}\n".format(step + 1, d_loss.data[0], g_loss_fake.data[0]))
+                    f.write("Step {}, D Loss {}, G Loss {}\n".format(step + 1, d_loss.item(), g_loss_fake.item()))
 
             # Sample images
             if (step + 1) % self.sample_step == 0:
