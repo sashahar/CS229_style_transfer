@@ -5,15 +5,16 @@ from torch.utils.data import Dataset, DataLoader
 from custom_dataset import *
 from torch.backends import cudnn
 from utils import make_folder
+import torch
 
 def main(config):
     # For fast training
     cudnn.benchmark = True
-
+    torch.cuda.empty_cache()
 
     # Data loader
     dataset = JaffeDataset(data_dir = 'jaffe', labels_path = 'labels.csv')
-    data_loader = DataLoader(dataset, config.batch_size, shuffle=True, num_workers= 4)
+    data_loader = DataLoader(dataset, 10, shuffle=True, num_workers= 4)
 
     # Create directories if not exist
     make_folder(config.model_save_path, config.version)

@@ -76,7 +76,7 @@ class Generator(nn.Module):
             layer1.append(nn.BatchNorm2d(ngf * mult * 2))
             layer1.append(nn.LeakyReLU(0.1))
         self.attn1 = Self_Attn(batch_size, int(self.imsize/4), ngf * mult * 2, 'relu')
-        n_intermediate = 3
+        n_intermediate = 2
         mult = 2**n_downsampling
 
 

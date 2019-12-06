@@ -62,6 +62,7 @@ class Trainer(object):
 
         self.build_model()
 
+        #self.use_tensorboard = True
         if self.use_tensorboard:
             self.build_tensorboard()
 
@@ -102,7 +103,8 @@ class Trainer(object):
                 items = next(data_iter)
 
             X, Y = items
-            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(Y.shape[0], 1, 1, 1)))
+            #print(Y.shape)
+            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(Y.shape[0], 1, 1, 1))).cuda()
             X, Y = X.type(torch.FloatTensor), Y.type(torch.FloatTensor)
             #X, Y = Variable(X.cuda()), Variable(Y.cuda())
             X, Y = Variable(X), Variable(Y)
