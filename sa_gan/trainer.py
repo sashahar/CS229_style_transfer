@@ -185,6 +185,11 @@ class Trainer(object):
                 result = torch.cat((X, fake_images, Y), dim = 2)
                 save_image(denorm(result.data),
                            os.path.join(self.sample_path, '{}_fake.png'.format(step + 1)))
+                with open('image_{}.txt'.format(step+1), 'a') as f:
+                    # f.write("Step {}, D Loss {}, G Loss {}\n".format(step + 1, d_loss.data[0], g_loss_fake.data[0]))
+                    real_labels = Y[:, 0, 0, 0]
+                    fake_labels = fake_class[:, 0, 0, 0]
+                    f.write("Step {}, Real Labels: {}, Target(Fake) Labels {}\n".format(step + 1, real_labels, fake_class))
 
             if (step+1) % model_save_step==0:
                 torch.save(self.G.state_dict(),
