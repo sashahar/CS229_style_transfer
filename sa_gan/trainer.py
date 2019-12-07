@@ -189,6 +189,7 @@ class Trainer(object):
                     # f.write("Step {}, D Loss {}, G Loss {}\n".format(step + 1, d_loss.data[0], g_loss_fake.data[0]))
                     real_labels = Y[:, 0, 0, 0]
                     fake_labels = fake_class[:, 0, 0, 0]
+                    print(fake_labels)
                     f.write("Step {}, Real Labels: {}, Target(Fake) Labels {}\n".format(step + 1, real_labels, fake_class))
 
             if (step+1) % model_save_step==0:
