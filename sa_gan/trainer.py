@@ -190,7 +190,7 @@ class Trainer(object):
                     real_labels = Y[:, 0, 0, 0]
                     fake_labels = fake_class[:, 0, 0, 0]
                     print(fake_labels)
-                    f.write("Step {}, Real Labels: {}, Target(Fake) Labels {}\n".format(step + 1, real_labels, fake_class))
+                    f.write("Step {}, Real Labels: {}, Target(Fake) Labels {}\n".format(step + 1, real_labels, fake_labels))
 
             if (step+1) % model_save_step==0:
                 torch.save(self.G.state_dict(),
