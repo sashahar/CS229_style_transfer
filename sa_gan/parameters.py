@@ -48,7 +48,7 @@ def get_parameters():
 
     # Step size
     parser.add_argument('--log_step', type=int, default=10)
-    parser.add_argument('--sample_step', type=int, default=100)
+    parser.add_argument('--sample_step', type=int, default=2000)
     parser.add_argument('--model_save_step', type=float, default=1.0)
 
 
