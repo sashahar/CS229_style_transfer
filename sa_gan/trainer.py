@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn as nn
 from torch.autograd import Variable
 from torchvision.utils import save_image
+import torch.nn.functional as F
 
 from sagan_models import Generator, Discriminator, ConvolutionalGenerator, UpDownConvolutionalGenerator
 from utils import *
@@ -103,8 +104,7 @@ class Trainer(object):
                 items = next(data_iter)
 
             X, Y = items
-            #print(Y.shape)
-            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(Y.shape[0], 1, 1, 1))).cuda()
+            fake_class = torch.Tensor(np.ones(Y.shape)* np.random.randint(0, 6, size=(Y.shape[0], 1, 1, 1)))
             X, Y = X.type(torch.FloatTensor), Y.type(torch.FloatTensor)
             #X, Y = Variable(X.cuda()), Variable(Y.cuda())
             X, Y = Variable(X), Variable(Y)
@@ -112,31 +112,43 @@ class Trainer(object):
                 X = X.cuda()
                 Y = Y.cuda()
 
+            class_label = Y[:,0,0,0]
+            #class_one_hot = torch.zeros(Y.shape[0], 6)
+            #for i, elem in enumerate(class_label):
+                #class_one_hot[i, int(elem.item())] = 1.0
+            class_one_hot = class_label.type(torch.LongTensor)
             #FRITS: the real_disc_in consists of the images X and the desired class
             #desired class chosen randomly, different from real class Y
-            real_disc_in = torch.cat((X,Y), dim = 1)
+            real_disc_in = X#,torch.cat((X,Y), dim = 1)
             generator_in = torch.cat((X,fake_class), dim = 1)
             # Compute loss with real images
             # dr1, dr2, df1, df2, gf1, gf2 are attention scores
             #real_images = tensor2var(real_images)
             #Frits TODO: why feed the real_disc_in to D?
             d_out_real,dr1,dr2 = self.D(real_disc_in)
+            print(d_out_real)
+            print(class_one_hot)
             if self.adv_loss == 'wgan-gp':
                 d_loss_real = - torch.mean(d_out_real)
             elif self.adv_loss == 'hinge':
                 d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
+            elif self.adv_loss == 'softmax':
+                d_loss_real = F.cross_entropy(d_out_real, class_one_hot).mean()
 
             # apply Gumbel Softmax
 
             #Changed to input both image and class
-            fake_images,gf1,gf2 = self.G(real_disc_in)
-            fake_disc_in = torch.cat((fake_images, Y), dim = 1)
+            fake_images,gf1,gf2 = self.G(torch.cat((X,Y), dim = 1))
+            fake_disc_in = fake_images#torch.cat((fake_images, Y), dim = 1)
             d_out_fake,df1,df2 = self.D(fake_disc_in)
 
             # if self.adv_loss == 'wgan-gp':
             #     d_loss_fake = d_out_fake.mean()
             if self.adv_loss == 'hinge':
                 d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
+            elif self.adv_loss == 'softmax':
+                d_loss_fake = F.cross_entropy(d_out_fake, class_one_hot).mean()
+            #elif self.adv_loss == 'softmax':
 
 
             # Backward + Optimize
@@ -151,13 +163,16 @@ class Trainer(object):
 
             #TODO Fritz: Do we need this?
             fake_images,_,_ = self.G(generator_in)
-            fake_disc_in = torch.cat((fake_images, Y), dim = 1)
+            fake_disc_in = fake_images#torch.cat((fake_images, Y), dim = 1)
             # Compute loss with fake images
             g_out_fake,_,_ = self.D(fake_disc_in)  # batch x n
             if self.adv_loss == 'wgan-gp':
                 g_loss_fake = - g_out_fake.mean()
             elif self.adv_loss == 'hinge':
                 g_loss_fake = - g_out_fake.mean()
+            elif self.adv_loss == 'softmax':
+                g_loss_fake = - F.cross_entropy(g_out_fake, class_one_hot).mean()
+
 
             self.reset_grad()
             g_loss_fake.backward()

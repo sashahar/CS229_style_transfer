@@ -334,7 +334,7 @@ class Discriminator(nn.Module):
         layer3 = []
         last = []
 
-        layer1.append(SpectralNorm(nn.Conv2d(2, conv_dim, 4, 2, 1)))
+        layer1.append(SpectralNorm(nn.Conv2d(1, conv_dim, 4, 2, 1)))
         layer1.append(nn.LeakyReLU(0.1))
 
         curr_dim = conv_dim
@@ -357,7 +357,7 @@ class Discriminator(nn.Module):
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
 
-        last.append(nn.Conv2d(curr_dim, 1, 4))
+        last.append(nn.Conv2d(curr_dim, 6, 4))
         self.last = nn.Sequential(*last)
 
         self.attn1 = Self_Attn(batch_size, int(self.imsize/8), 256, 'relu')
@@ -370,6 +370,9 @@ class Discriminator(nn.Module):
         out,p1 = self.attn1(out)
         out=self.l4(out)
         out,p2 = self.attn2(out)
+       #print('OUT')
+        #print(out.shape)
         out=self.last(out)
+        #print(out.shape)
 
         return out.squeeze(), p1, p2
